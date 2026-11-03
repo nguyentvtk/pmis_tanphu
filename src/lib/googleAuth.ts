@@ -38,12 +38,13 @@ export function loadGis(): Promise<Gis> {
   });
 }
 
-export async function initGoogleSignIn(clientId: string, button: HTMLElement, onSignedIn: (email: string) => void): Promise<void> {
+export async function initGoogleSignIn(clientId: string, button: HTMLElement, onSignedIn: (email: string) => void, onPromptIssue?: (reason: string) => void): Promise<void> {
   const g = await loadGis();
   listener = onSignedIn;
   g.accounts.id.initialize({ client_id: clientId, callback: onCredential, auto_select: true, cancel_on_tap_outside: false });
   g.accounts.id.renderButton(button, { theme: 'outline', size: 'large', text: 'signin_with', locale: 'vi', width: 280 });
-  g.accounts.id.prompt();
+  // Đăng nhập nhanh (One Tap) có thể bị trình duyệt chặn (FedCM/cookie) — báo để màn hình gợi ý dùng nút bên trên.
+  g.accounts.id.prompt((n) => { if (n.isNotDisplayed() || n.isSkippedMoment()) onPromptIssue?.('ONE_TAP_KHONG_HIEN'); });
 }
 
 export async function getGoogleIdToken(): Promise<string> {
