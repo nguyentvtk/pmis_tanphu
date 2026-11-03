@@ -31,6 +31,7 @@
  *      CHAM_NGHIEM_TRONG  SPI < 0,85
  */
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { confirmDialog } from './ui/Feedback';
 
 // Next.js vẫn render phía máy chủ cho 'use client'; useLayoutEffect trên máy chủ gây cảnh báo.
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -1202,7 +1203,7 @@ function Detail({ p, e, task, taskEvm, reports, evms, onPick, role, onSetDone }:
   const [doneMsg, setDoneMsg] = useState('');
   const toggleDone = async (done: boolean) => {
     if (!task || !onSetDone || doneBusy) return;
-    if (!done && typeof window !== 'undefined' && !window.confirm(`Hủy trạng thái hoàn thành của ${task.ma_cong_tac}?`)) return;
+    if (!done && !(await confirmDialog({ title: 'Hủy trạng thái hoàn thành?', message: `Hủy trạng thái hoàn thành của công tác ${task.ma_cong_tac}?`, confirmLabel: 'Hủy hoàn thành', danger: true }))) return;
     setDoneBusy(true); setDoneMsg('');
     try { await onSetDone(task.ma_cong_tac, done); } catch (err) { setDoneMsg(errText(err)); } finally { setDoneBusy(false); }
   };
