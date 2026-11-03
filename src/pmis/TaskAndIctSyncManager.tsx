@@ -13,6 +13,7 @@
  * (tệp PDF đi từ ICT -> bộ nhớ trình duyệt -> Apps Script -> Drive, không ghi ra máy).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast, confirmDialog } from './ui/Feedback';
 
 /* ============================== Kiểu dữ liệu ============================== */
 export type Role = 'DIRECTOR' | 'SPECIALIST';
@@ -253,7 +254,8 @@ function TaskForm({ data, api, onCreated, defaultMaDA }: { data: Bootstrap; api:
       await api('createTask', { ...f, van_ban_chi_dao: f.van_ban_chi_dao.trim() || (ict.enabled ? ict.soKyHieu.trim() : ''), lien_ket_ict: ict.enabled });
       setF({ ...f, ma_da: defaultMaDA ?? '', van_ban_chi_dao: '', tieu_de: '', noi_dung_chi_dao: '', han_hoan_thanh: '', trong_tam: false, giai_doan: '', chu_tri: '', phoi_hop: [] });
       setIct({ enabled: false, soKyHieu: '' }); onCreated();
-    } catch (x) { setErr(errText(x)); } finally { setBusy(false); }
+      toast('Đã giao nhiệm vụ.', 'ok');
+    } catch (x) { setErr(errText(x)); toast('Giao nhiệm vụ thất bại.', 'err'); } finally { setBusy(false); }
   };
 
   return (
@@ -317,9 +319,10 @@ function ProgressForm({ task, current, api, onDone }: { task: Task; current: num
     e.preventDefault(); setErr('');
     if (pct < current) return setErr('Tiến độ không được thấp hơn lần báo cáo trước.');
     if (!text.trim()) return setErr('Nhập nội dung báo cáo.');
+    if (fin && !(await confirmDialog({ title: 'Gửi báo cáo cuối?', message: 'Báo cáo cuối sẽ KHÔNG sửa được sau khi gửi và đánh dấu nhiệm vụ hoàn thành.', confirmLabel: 'Gửi báo cáo cuối', danger: true }))) return;
     setBusy(true);
-    try { await api('addProgress', { task_id: task.task_id, phan_tram: fin ? 100 : pct, noi_dung: text.trim(), bao_cao_cuoi: fin }); onDone(); }
-    catch (x) { setErr(errText(x)); } finally { setBusy(false); }
+    try { await api('addProgress', { task_id: task.task_id, phan_tram: fin ? 100 : pct, noi_dung: text.trim(), bao_cao_cuoi: fin }); toast(fin ? 'Đã gửi báo cáo cuối.' : 'Đã gửi báo cáo tiến độ.', 'ok'); onDone(); }
+    catch (x) { setErr(errText(x)); toast('Gửi báo cáo thất bại.', 'err'); } finally { setBusy(false); }
   };
   return (
     <form onSubmit={submit} className="tim-sub" noValidate>
@@ -368,7 +371,7 @@ function TaskCard({ task, data, api, reload, myAssign }: { task: Task; data: Boo
         {myAssign?.trang_thai === 'CHUA_TIEP_NHAN' && <button onClick={() => act('receiveTask', { task_id: task.task_id })}>Tiếp nhận</button>}
         {myAssign && myAssign.trang_thai === 'DANG_XU_LY' && task.trang_thai !== 'HOAN_THANH' && <button onClick={() => setOpen(!open)}>{open ? 'Đóng' : 'Báo cáo tiến độ'}</button>}
         {isDir && task.trang_thai === 'CHO_XAC_NHAN' && (
-          <button onClick={() => { if (pending.length === 0 || window.confirm(`Còn ${pending.length} người phối hợp chưa báo cáo cuối (không được tính điểm). Vẫn xác nhận hoàn thành?`)) act('confirmTask', { task_id: task.task_id }); }}>Xác nhận hoàn thành</button>
+          <button onClick={async () => { if (pending.length === 0 || await confirmDialog({ title: 'Xác nhận hoàn thành nhiệm vụ?', message: `Còn ${pending.length} người phối hợp chưa báo cáo cuối (không được tính điểm). Vẫn xác nhận hoàn thành?`, confirmLabel: 'Xác nhận hoàn thành', danger: true })) act('confirmTask', { task_id: task.task_id }); }}>Xác nhận hoàn thành</button>
         )}
         {task.ma_da && task.giai_doan && task.trang_thai !== 'HOAN_THANH' && (isDir || (myAssign && !mineDone)) && (
           <button className="tim-ghost" onClick={() => setIctV({ ...ictV, enabled: !ictV.enabled })}>Văn bản ICT</button>

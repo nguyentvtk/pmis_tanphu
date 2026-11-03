@@ -15,6 +15,7 @@ import React, { Component, ReactNode, Suspense, lazy, useCallback, useEffect, us
 import { useShallow } from 'zustand/react/shallow';
 import { TABS, TabDef, TabId, bindUrl, tabsFor, usePmisStore, str } from './usePmisStore';
 import type { Libs } from './SettlementZipExporter';
+import { ToastHost, ConfirmHost } from './ui/Feedback';
 
 /* ───────────── Nạp lười từng tab (Vercel: tránh đưa Gantt/ExcelJS/VGCA vào gói đầu) ───────────── */
 const loaders = {
@@ -115,8 +116,9 @@ const CSS = `
 .pm-btn.pm-ghost{background:transparent;color:var(--pm-ac)}.pm-btn.pm-danger{background:var(--pm-red);border-color:var(--pm-red);color:#fff}
 .pm-btn:disabled{opacity:.5;cursor:not-allowed}
 .pm-link{font:inherit;background:none;border:0;padding:2px 0;color:var(--pm-ac);cursor:pointer;text-align:left;text-decoration:underline;text-underline-offset:2px}
-.pm-badge{display:inline-block;padding:0 8px;border-radius:10px;border:1px solid var(--k,var(--pm-bd));color:var(--k,var(--pm-fg));font-size:12px;white-space:nowrap}
-.pm-badge.pm-ghost{--k:var(--pm-bd);color:var(--pm-mut)}
+.pm-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 9px;border-radius:10px;border:1px solid var(--pm-bd);background:var(--pm-card);color:var(--pm-fg);font-size:12px;white-space:nowrap}
+.pm-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--k,var(--pm-mut));flex:none}
+.pm-badge.pm-ghost{color:var(--pm-mut)}.pm-badge.pm-ghost::before{display:none}
 .pm-note{color:var(--pm-mut);font-size:13px;margin:6px 0}.pm-err{color:var(--pm-red)}.pm-ok{color:var(--pm-green)}.pm-warn{color:var(--pm-amber)}
 .pm-scroll{overflow-x:auto}.pm-table{border-collapse:collapse;width:100%;font-size:13px}
 .pm-table th,.pm-table td{border-bottom:1px solid var(--pm-bd);padding:6px 8px;text-align:left;vertical-align:top}.pm-table .r{text-align:right;font-variant-numeric:tabular-nums}
@@ -147,6 +149,13 @@ progress{accent-color:var(--pm-accent,#1a5fb4)}
 @keyframes pm-pulse{50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.pm-app *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (max-width:560px){.pm-main{padding:12px}.pm-top{padding:8px 12px}.pm-tab small{display:none}.pm-ctl select{width:100%}.pm-ctl label.pm-inline{width:100%}.pm-bars{grid-template-columns:minmax(0,110px) 1fr auto}}
+.pm-toasts{position:fixed;top:14px;right:14px;z-index:1000;display:flex;flex-direction:column;gap:8px;max-width:min(360px,calc(100vw - 28px));pointer-events:none}
+.pm-toast{display:flex;gap:8px;align-items:flex-start;background:var(--pm-card);color:var(--pm-fg);border:1px solid var(--pm-bd);border-left:4px solid var(--pm-ac);border-radius:8px;padding:9px 12px;font-size:13px;box-shadow:0 6px 24px rgba(2,6,23,.16);animation:pm-toast-in .2s ease}
+.pm-toast-ok{border-left-color:var(--pm-green)}.pm-toast-err{border-left-color:var(--pm-red)}
+@keyframes pm-toast-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.pm-modal-wrap{position:fixed;inset:0;z-index:1001;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.45);padding:16px}
+.pm-modal{background:var(--pm-bg);color:var(--pm-fg);border:1px solid var(--pm-bd);border-radius:12px;padding:16px 18px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(2,6,23,.3)}
+.pm-modal h3{margin:0 0 6px;font-size:16px}.pm-modal-act{justify-content:flex-end;margin-top:14px}
 `;
 
 const hhmmss = (ms: number): string => new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(ms));
@@ -279,6 +288,8 @@ export default function MainPmisApp({
           </div>
         ))}
       </main>
+      <ToastHost />
+      <ConfirmHost />
     </div>
   );
 }
