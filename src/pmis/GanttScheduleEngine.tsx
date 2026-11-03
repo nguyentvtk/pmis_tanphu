@@ -980,10 +980,14 @@ export function GanttView(props: GanttViewProps) {
     return (
       <div className="gse"><style>{CSS}</style>
         <div className="gse-panel gse-empty">
-          <p><b>Chưa có công tác nào trong sheet Gantt.</b></p>
-          <p>Sheet <code>Gantt</code> cần các cột: <code>ma_da</code>, <code>ma_cong_tac</code> (vd 8179900-001), <code>ten_cong_tac</code>, <code>ngay_bd</code>, <code>ngay_kt</code>, <code>gia_tri</code>, <code>trang_thai</code>.</p>
+          <p><b>Chưa có dữ liệu tiến độ cho dự án này.</b></p>
+          <p style={{ color: 'var(--mut, #667085)' }}>Hãy chọn một dự án cụ thể ở thanh phía trên, hoặc nhập các mốc công tác (tên công tác, ngày bắt đầu/kết thúc, giá trị) để xem biểu đồ tiến độ và phân tích EVM.</p>
           {model.warnings.length > 0 && <Warnings warnings={model.warnings} />}
           {props.onReload && <button className="gse-btn" onClick={props.onReload}>Tải lại</button>}
+          <details style={{ marginTop: 10, fontSize: 13 }}>
+            <summary style={{ cursor: 'pointer', color: 'var(--mut, #667085)' }}>Thông tin kỹ thuật cho quản trị</summary>
+            <p style={{ marginTop: 6 }}>Sheet <code>Gantt</code> cần các cột: <code>ma_da</code>, <code>ma_cong_tac</code> (vd 8179900-001), <code>ten_cong_tac</code>, <code>ngay_bd</code>, <code>ngay_kt</code>, <code>gia_tri</code>, <code>trang_thai</code>.</p>
+          </details>
         </div>
       </div>
     );

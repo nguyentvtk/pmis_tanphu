@@ -24,7 +24,12 @@ export default function PmisShell() {
 
   if (email) {
     return <MainPmisApp getIdToken={getGoogleIdToken} loadLibs={loadLibs} vgcaBaseUrl={process.env.NEXT_PUBLIC_VGCA_URL || undefined}
-      onSignOut={() => { signOutGoogle(); setEmail(''); }} />;
+      onSignOut={() => {
+        signOutGoogle();
+        // Dọn cache dữ liệu (SWR) kèm email trong sessionStorage để máy dùng chung không lộ dữ liệu phiên trước.
+        try { for (let i = sessionStorage.length - 1; i >= 0; i--) { const key = sessionStorage.key(i); if (key && key.startsWith('pmis:swr:')) sessionStorage.removeItem(key); } } catch { /* bỏ qua */ }
+        setEmail('');
+      }} />;
   }
   return (
     <main style={{ maxWidth: 420, margin: '12vh auto', padding: 16, fontFamily: 'system-ui, sans-serif' }}>

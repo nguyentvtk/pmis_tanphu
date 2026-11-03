@@ -52,6 +52,8 @@ export default function OverviewTab() {
   const error = usePmisStore((s) => s.overviewError);
   const setMaDA = usePmisStore((s) => s.setMaDA);
   const [nhom, setNhom] = useState<'ALL' | 'KY_THUAT' | 'KE_TOAN'>('ALL');
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const [q, setQ] = useState('');
 
   const k = useMemo(() => (overview ? computeOverview(overview, maDA) : null), [overview, maDA]);
   const alerts = useMemo(() => (k ? k.alerts.filter((a) => nhom === 'ALL' || a.nhom === nhom) : []), [k, nhom]);
@@ -115,23 +117,33 @@ export default function OverviewTab() {
         </div>
         {alerts.length === 0 ? <p className="pm-note">Không có cảnh báo.</p> : (
           <ul className="pm-alerts">
-            {alerts.slice(0, 80).map((a) => (
+            {(showAllAlerts ? alerts : alerts.slice(0, 80)).map((a) => (
               <li key={a.key} className={`lv-${a.muc}`}>
                 <span className="pm-badge">{LEVEL[a.muc]}</span> <span className="pm-badge pm-ghost">{a.nhom === 'KY_THUAT' ? 'Kỹ thuật' : 'Kế toán'}</span> {a.text}
               </li>
             ))}
           </ul>
         )}
-        {alerts.length > 80 && <p className="pm-note">Hiển thị 80/{alerts.length} cảnh báo đầu (ưu tiên mức cao). Lọc theo dự án để xem đầy đủ.</p>}
+        {alerts.length > 80 && (
+          <p className="pm-note">
+            {showAllAlerts ? `Đang hiển thị tất cả ${alerts.length} cảnh báo. ` : `Hiển thị 80/${alerts.length} cảnh báo đầu (ưu tiên mức cao). `}
+            <button type="button" className="pm-link" onClick={() => setShowAllAlerts((v) => !v)}>{showAllAlerts ? 'Thu gọn' : 'Xem tất cả'}</button>
+          </p>
+        )}
       </section>
 
       <section className="pm-card" aria-labelledby="ov-ls">
-        <h3 id="ov-ls">Danh sách dự án</h3>
+        <div className="pm-row">
+          <h3 id="ov-ls">Danh sách dự án</h3>
+          <label className="pm-inline">Tìm kiếm
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Mã, tên, loại, tình trạng…" aria-label="Tìm kiếm dự án" />
+          </label>
+        </div>
         <div className="pm-scroll">
           <table className="pm-table">
             <thead><tr><th scope="col">Mã</th><th scope="col">Dự án</th><th scope="col">Loại</th><th scope="col" className="r">Vốn cấp</th><th scope="col" className="r">Giải ngân</th><th scope="col" className="r">NT đã TT</th><th scope="col">Tình trạng</th></tr></thead>
             <tbody>
-              {k.projects.map((p) => (
+              {k.projects.filter((p) => { const s = q.trim().toLowerCase(); return !s || `${p.ma_da} ${p.ten_da} ${p.loai} ${p.tinhTrang}`.toLowerCase().includes(s); }).map((p) => (
                 <tr key={p.ma_da} aria-current={p.ma_da === maDA ? 'true' : undefined}>
                   <td>{p.ma_da}</td>
                   <td><button type="button" className="pm-link" onClick={() => setMaDA(p.ma_da)}>{p.ten_da}</button></td>
