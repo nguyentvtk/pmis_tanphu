@@ -71,7 +71,7 @@ export default function OverviewTab() {
         <Kpi label="Tổng số dự án" value={String(k.tong)} color="var(--pm-blue)" />
         <Kpi label="Đã hoàn thành" value={String(k.hoanThanh)} color="var(--pm-green)" />
         <Kpi label="Đang thực hiện" value={String(k.dangThucHien)} color="var(--pm-teal)" />
-        <Kpi label="Chậm tiến độ" value={String(k.cham)} sub={`quá hạn: ${k.quaHan}`} color="var(--pm-red)" />
+        <Kpi label="Chậm / Quá hạn" value={String(k.cham)} sub={`trong đó quá hạn: ${k.quaHan}`} color="var(--pm-red)" />
         <Kpi label="Chưa khởi công" value={String(k.chuaKhoiCong)} color="var(--pm-grey)" />
         <Kpi label="Vốn cấp / Tổng mức đầu tư" value={`${ty(k.vonCap)} / ${k.tmdt > 0 ? ty(k.tmdt) : '—'}`} color="var(--pm-violet)" />
         <Kpi label="Tỷ lệ giải ngân" value={pct(k.tyLeGiaiNgan)} sub={ty(k.giaiNgan)} color="var(--pm-green)" />
@@ -92,10 +92,15 @@ export default function OverviewTab() {
 
       <section className="pm-card" aria-labelledby="ov-gn">
         <h3 id="ov-gn">Giải ngân so với tiến độ thời gian <small>(vạch đen = % thời gian đã qua)</small></h3>
+        <ul className="pm-legend" style={{ margin: '0 0 8px' }}>
+          {(['Đúng tiến độ', 'Cần lưu ý', 'Chậm tiến độ', 'Quá hạn', 'Đã hoàn thành'] as TinhTrang[]).map((t) => (
+            <li key={t}><i style={{ background: TT_COLOR[t] }} aria-hidden="true" />{t}</li>
+          ))}
+        </ul>
         <div className="pm-bars">
           {k.projects.filter((p) => p.vonCap > 0).sort((a, b) => (b.tyLeGiaiNgan ?? 0) - (a.tyLeGiaiNgan ?? 0)).map((p: ProjectKpi) => (
             <React.Fragment key={p.ma_da}>
-              <button type="button" className="pm-link" onClick={() => setMaDA(p.ma_da)} title={`Chọn dự án ${p.ma_da}`}>{p.ten_da}</button>
+              <button type="button" className="pm-link" onClick={() => setMaDA(p.ma_da)} title={`${p.ten_da} — bấm để chọn dự án`}>{p.ten_da}</button>
               <div className="pm-track" title={`Giải ngân ${pct(p.tyLeGiaiNgan)} · thời gian ${pct(p.tienDoTg)}`}>
                 <div style={{ width: `${Math.min(100, (p.tyLeGiaiNgan ?? 0) * 100)}%`, background: TT_COLOR[p.tinhTrang] }} />
                 {p.tienDoTg != null && <u style={{ left: `${p.tienDoTg * 100}%` }} aria-hidden="true" />}
@@ -146,7 +151,7 @@ export default function OverviewTab() {
               {k.projects.filter((p) => { const s = q.trim().toLowerCase(); return !s || `${p.ma_da} ${p.ten_da} ${p.loai} ${p.tinhTrang}`.toLowerCase().includes(s); }).map((p) => (
                 <tr key={p.ma_da} aria-current={p.ma_da === maDA ? 'true' : undefined}>
                   <td>{p.ma_da}</td>
-                  <td><button type="button" className="pm-link" onClick={() => setMaDA(p.ma_da)}>{p.ten_da}</button></td>
+                  <td><button type="button" className="pm-link" onClick={() => setMaDA(p.ma_da)} title={p.ten_da}>{p.ten_da}</button></td>
                   <td>{p.loai}</td><td className="r">{ty(p.vonCap)}</td><td className="r">{pct(p.tyLeGiaiNgan)}</td><td className="r">{ty(p.ntDaThanhToan)}</td>
                   <td><span className="pm-badge" style={{ ['--k' as string]: TT_COLOR[p.tinhTrang] }}>{p.tinhTrang}</span></td>
                 </tr>

@@ -28,6 +28,8 @@ export default function PmisShell() {
         signOutGoogle();
         // Dọn cache dữ liệu (SWR) kèm email trong sessionStorage để máy dùng chung không lộ dữ liệu phiên trước.
         try { for (let i = sessionStorage.length - 1; i >= 0; i--) { const key = sessionStorage.key(i); if (key && key.startsWith('pmis:swr:')) sessionStorage.removeItem(key); } } catch { /* bỏ qua */ }
+        // Reset URL về gốc (xoá hash-route của phiên trước) cho sạch sau khi đăng xuất.
+        try { history.replaceState(null, '', location.pathname + location.search); } catch { /* bỏ qua */ }
         setEmail('');
       }} />;
   }
