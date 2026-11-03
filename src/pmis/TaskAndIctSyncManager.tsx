@@ -237,16 +237,19 @@ function TaskForm({ data, api, onCreated, defaultMaDA }: { data: Bootstrap; api:
   const specialists = useMemo(() => data.staff.filter((s) => !/giám đốc/i.test(s.chuc_vu)), [data.staff]);
   const [f, setF] = useState({ ma_da: defaultMaDA ?? '', van_ban_chi_dao: '', tieu_de: '', noi_dung_chi_dao: '', han_hoan_thanh: '', trong_tam: false, giai_doan: '' as Stage | '', chu_tri: '', phoi_hop: [] as string[] });
   const [ict, setIct] = useState<IctLinkValue>({ enabled: false, soKyHieu: '' });
-  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(''); const [errField, setErrField] = useState(''); const [busy, setBusy] = useState(false);
+  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+  const setRef = (k: string) => (el: HTMLElement | null) => { fieldRefs.current[k] = el; };
+  const fail = (field: string, msg: string) => { setErr(msg); setErrField(field); queueMicrotask(() => fieldRefs.current[field]?.focus()); };
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   useEffect(() => { if (defaultMaDA !== undefined) setF((p) => ({ ...p, ma_da: defaultMaDA })); }, [defaultMaDA]);
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setErr('');
-    if (!f.ma_da && !f.van_ban_chi_dao.trim() && !(ict.enabled && ict.soKyHieu)) return setErr('Chọn mã dự án hoặc nhập văn bản chỉ đạo của cấp trên.');
-    if (!f.chu_tri) return setErr('Phải chọn đúng 1 Chuyên viên Chủ trì.');
-    if (!f.noi_dung_chi_dao.trim()) return setErr('Nhập nội dung chỉ đạo.');
-    if (!f.han_hoan_thanh) return setErr('Chọn thời hạn hoàn thành.');
+    e.preventDefault(); setErr(''); setErrField('');
+    if (!f.ma_da && !f.van_ban_chi_dao.trim() && !(ict.enabled && ict.soKyHieu)) return fail('ma_da', 'Chọn mã dự án hoặc nhập văn bản chỉ đạo của cấp trên.');
+    if (!f.chu_tri) return fail('chu_tri', 'Phải chọn đúng 1 Chuyên viên Chủ trì.');
+    if (!f.noi_dung_chi_dao.trim()) return fail('noi_dung_chi_dao', 'Nhập nội dung chỉ đạo.');
+    if (!f.han_hoan_thanh) return fail('han_hoan_thanh', 'Chọn thời hạn hoàn thành.');
     if (ict.enabled && ict.soKyHieu && !SO_KY_HIEU_RE.test(ict.soKyHieu.trim())) return setErr('Số/Ký hiệu văn bản ICT chưa đúng định dạng.');
     setBusy(true);
     try {
@@ -261,7 +264,7 @@ function TaskForm({ data, api, onCreated, defaultMaDA }: { data: Bootstrap; api:
       <h3>Giao nhiệm vụ mới</h3>
       <div className="tim-grid">
         <label>Dự án (maDA)
-          <select value={f.ma_da} onChange={(e) => set('ma_da', e.target.value)}>
+          <select ref={setRef('ma_da')} aria-invalid={errField === 'ma_da'} aria-describedby={errField === 'ma_da' ? 'task-form-error' : undefined} value={f.ma_da} onChange={(e) => set('ma_da', e.target.value)}>
             <option value="">— Không gắn dự án —</option>
             {data.projects.map((p) => <option key={p.ma_da} value={p.ma_da}>{p.ma_da} · {p.ten_da}</option>)}
           </select>
@@ -274,17 +277,17 @@ function TaskForm({ data, api, onCreated, defaultMaDA }: { data: Bootstrap; api:
             <option value="">—</option>{STAGES.map((s) => <option key={s}>{s}</option>)}
           </select>
         </label>
-        <label>Thời hạn hoàn thành
-          <input type="date" min={today()} value={f.han_hoan_thanh} onChange={(e) => set('han_hoan_thanh', e.target.value)} />
+        <label>Thời hạn hoàn thành (bắt buộc)
+          <input type="date" min={today()} ref={setRef('han_hoan_thanh')} aria-required={true} aria-invalid={errField === 'han_hoan_thanh'} aria-describedby={errField === 'han_hoan_thanh' ? 'task-form-error' : undefined} value={f.han_hoan_thanh} onChange={(e) => set('han_hoan_thanh', e.target.value)} />
         </label>
       </div>
       <label>Tiêu đề ngắn <input value={f.tieu_de} maxLength={200} onChange={(e) => set('tieu_de', e.target.value)} /></label>
-      <label>Nội dung chỉ đạo <textarea rows={4} value={f.noi_dung_chi_dao} onChange={(e) => set('noi_dung_chi_dao', e.target.value)} /></label>
+      <label>Nội dung chỉ đạo (bắt buộc) <textarea ref={setRef('noi_dung_chi_dao')} aria-required={true} aria-invalid={errField === 'noi_dung_chi_dao'} aria-describedby={errField === 'noi_dung_chi_dao' ? 'task-form-error' : undefined} rows={4} value={f.noi_dung_chi_dao} onChange={(e) => set('noi_dung_chi_dao', e.target.value)} /></label>
       <label className="tim-check"><input type="checkbox" checked={f.trong_tam} onChange={(e) => set('trong_tam', e.target.checked)} /><span>Nhiệm vụ trọng tâm</span></label>
 
       <div className="tim-grid">
         <label>Chuyên viên Chủ trì (bắt buộc)
-          <select value={f.chu_tri} onChange={(e) => setF((p) => ({ ...p, chu_tri: e.target.value, phoi_hop: p.phoi_hop.filter((x) => x !== e.target.value) }))}>
+          <select ref={setRef('chu_tri')} aria-required={true} aria-invalid={errField === 'chu_tri'} aria-describedby={errField === 'chu_tri' ? 'task-form-error' : undefined} value={f.chu_tri} onChange={(e) => setF((p) => ({ ...p, chu_tri: e.target.value, phoi_hop: p.phoi_hop.filter((x) => x !== e.target.value) }))}>
             <option value="">— Chọn —</option>
             {specialists.map((s) => <option key={s.ma_nv} value={s.ma_nv}>{s.ho_ten}</option>)}
           </select>
@@ -299,7 +302,7 @@ function TaskForm({ data, api, onCreated, defaultMaDA }: { data: Bootstrap; api:
       </div>
 
       <IctLinkField value={ict} onChange={setIct} maDA={f.ma_da} giaiDoan={f.giai_doan} api={api} />
-      {err && <p className="tim-note tim-warn" role="alert">{err}</p>}
+      {err && <p id="task-form-error" className="tim-note tim-warn" role="alert">{err}</p>}
       <button type="submit" disabled={busy}>{busy ? 'Đang giao…' : 'Giao nhiệm vụ'}</button>
     </form>
   );
@@ -500,7 +503,7 @@ const CSS = `
 .tim-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.tim-grow{flex:1 1 220px}
 .tim-root label{display:grid;gap:3px;font-size:13px;color:var(--mut)}
 .tim-root input:not([type=checkbox]):not([type=radio]),.tim-root select,.tim-root textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
-.tim-root input[aria-invalid=true]{border-color:var(--warn)}
+.tim-root input[aria-invalid=true],.tim-root select[aria-invalid=true],.tim-root textarea[aria-invalid=true]{border-color:var(--warn)}
 .tim-check{display:flex!important;grid-template-columns:none;align-items:center;gap:8px;color:var(--fg)!important;font-size:14px!important}
 .tim-root button{font:inherit;background:var(--acc);color:var(--acc-fg);border:1px solid var(--acc);border-radius:6px;padding:7px 14px;cursor:pointer}
 .tim-root button.tim-ghost{background:transparent;color:var(--acc)}.tim-root button:disabled{opacity:.5;cursor:not-allowed}
